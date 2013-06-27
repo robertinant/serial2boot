@@ -53,18 +53,19 @@ then
 	exit 1
 fi
 
-
 #Stop any previous screen sessions
 `2>&1 > /dev/null screen -S test -p 0 -X quit`
 
+echo "Opening serial port $SERIAL_PORT @ 115200"
 #set the serial port speed
 `2>&1 > /dev/null stty -F $SERIAL_PORT ospeed 115200 2>&1 > /dev/null`
 
-echo 'Waiting for serial port'
+echo "Waiting for boot char on serial port"
 READ=`dd if=$SERIAL_PORT count=1 2> /dev/null`
 
+echo "Serial port ready"
 if [ "$READ" == "C" ]; then
-	echo 'Loading....'
+	echo "Loading $BOOT_FILE ...."
 	#Start a screen session on the serial port
 	`screen -S test -d -m $SERIAL_PORT 115200 screen -x test`
 	sleep 1
@@ -72,7 +73,7 @@ if [ "$READ" == "C" ]; then
 	`screen -S test -p 0 -X exec \!\! sx -kX $BOOT_FILE`
 	#Wait for the sx process to finish
 	wait_load
-	echo 'Loading done....'
+	echo "Loading done...."
 	sleep 1
 	`screen -S test -p 0 -X quit`
 	exit 0
