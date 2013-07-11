@@ -2,7 +2,7 @@
 
 wait_load(){
 
-	while 2>&1>/dev/null killall -0 sx 2>&1>/dev/null; do
+	while 2>&1>/dev/null killall -0 $1 2>&1>/dev/null; do
 		sleep 0.5
 	done
 }
@@ -12,7 +12,7 @@ usage(){
 	echo "       see serial2boot -h for more details"
 }
 
-BOOT_FILE=u-boot-spl.bin
+BOOT_FILE=MLO
 SERIAL_PORT=/dev/ttyUSB0
 
 while getopts ":s:f:h" opt; do
@@ -23,8 +23,8 @@ while getopts ":s:f:h" opt; do
 			echo ""
 			echo "options:"
 			echo "-h	show brief help"
-			echo "-f	file to load. Default u-boot-spl.bin"
-			echo "	This is the raw binary without headers and can usually be found in u-boot/spl"
+			echo "-f	file to load. Default $BOOT_FILE"
+			echo "          This is the raw binary without headers and can usually be found in u-boot/spl"
 			echo "-s 	serial port. Default /dev/ttyUSB1"
 			exit 0
 			;;
@@ -65,15 +65,19 @@ READ=`dd if=$SERIAL_PORT count=1 2> /dev/null`
 
 echo "Serial port ready"
 if [ "$READ" == "C" ]; then
-	echo "Loading $BOOT_FILE ...."
 	#Start a screen session on the serial port
 	`screen -S test -d -m $SERIAL_PORT 115200 screen -x test`
 	sleep 1
+	echo -ne "Loading $BOOT_FILE...."
 	#Tell the screen session to execute sx to load the boot file
 	`screen -S test -p 0 -X exec \!\! sx -kX $BOOT_FILE`
 	#Wait for the sx process to finish
-	wait_load
-	echo "Loading done...."
+	wait_load sx
+	echo "done"
+	echo -ne "Loading u-boot.img...."
+	`screen -S test -p 0 -X exec \!\! sb -kX u-boot.img`
+	wait_load sb
+	echo "done"
 	sleep 1
 	`screen -S test -p 0 -X quit`
 	exit 0
